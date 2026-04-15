@@ -4,6 +4,7 @@ Upgraded from original Flask + OpenCV project by Mayukh Ghosh
 """
 
 import cv2
+import numpy as np
 import os
 import time
 import threading
@@ -38,7 +39,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -265,9 +266,6 @@ def stream_video(camera_id: int):
 
 
 def _black_frame(width: int = 640, height: int = 480):
-    frame = cv2.UMat(height, width, cv2.CV_8UC3)
-    # UMat → plain ndarray for imencode
-    import numpy as np
     placeholder = np.zeros((height, width, 3), dtype="uint8")
     cv2.putText(
         placeholder, "Camera Offline", (160, 240),

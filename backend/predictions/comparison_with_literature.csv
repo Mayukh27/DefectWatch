@@ -1,8 +1,8 @@
 Method,Type,Precision,Recall,F1,Accuracy,FPS,IoU,Reference
-FD,Ours (CPU),0.8879,0.3118,0.4615,0.6927,496.21,—,This work
-MOG2,Ours (CPU),0.8383,0.1437,0.2453,0.6266,194.03,—,This work
-RUNNING_AVG,Ours (CPU),0.804,0.1466,0.248,0.6245,544.8,—,This work
-CUSTOM,Ours (CPU),0.8465,0.853,0.8498,0.8726,22.13,—,This work
+FD,Ours (CPU),0.9736,0.5673,0.7169,0.7891,693.99,—,This work
+MOG2,Ours (CPU),0.9474,0.2769,0.4286,0.6525,301.48,—,This work
+RUNNING_AVG,Ours (CPU),0.8421,0.2769,0.4168,0.6353,762.24,—,This work
+CUSTOM,Ours (CPU),0.7071,0.9981,0.8278,0.8045,32.07,—,This work
 YOLOv4 (GPU),Literature,0.92,0.9,0.91,0.93,62.0,0.657,"Bochkovskiy et al., arXiv:2004.10934 (2020)"
 Mask R-CNN (GPU),Literature,0.88,0.85,0.865,0.89,8.0,0.663,"He et al., arXiv:1703.06870 (2017)"
 MOG2 / GMM (CPU),Literature,0.8,0.74,0.769,0.83,80.0,0.48,"Stauffer & Grimson, IEEE CVPR 1999; OpenCV MOG2"

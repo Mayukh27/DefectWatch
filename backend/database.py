@@ -6,7 +6,7 @@ Schema:
     evaluations (
         id          INTEGER PRIMARY KEY,
         method      TEXT,
-        camera_id   INTEGER,
+        camera_id   TEXT,
         precision   REAL,
         recall      REAL,
         f1          REAL,
@@ -43,7 +43,7 @@ class Database:
                 CREATE TABLE IF NOT EXISTS evaluations (
                     id          INTEGER PRIMARY KEY AUTOINCREMENT,
                     method      TEXT    NOT NULL,
-                    camera_id   INTEGER DEFAULT 0,
+                    camera_id   TEXT    DEFAULT "0",
                     precision   REAL,
                     recall      REAL,
                     f1          REAL,
@@ -58,7 +58,7 @@ class Database:
 
     # ──────────────────────────────────────────
     def save_evaluation(
-        self, method: str, metrics: Dict[str, Any], camera_id: int = 0
+        self, method: str, metrics: Dict[str, Any], camera_id: str = "0"
     ) -> int:
         """Insert an evaluation result row. Returns the new row id."""
         if "error" in metrics:
@@ -68,7 +68,7 @@ class Database:
             cur = conn.execute(
                 """
                 INSERT INTO evaluations
-                    (method, camera_id, precision, recall, f1, accuracy,
+                    (method, str(camera_id), precision, recall, f1, accuracy,
                      fps, avg_latency, n_frames, timestamp)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,

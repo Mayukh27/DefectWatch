@@ -8,9 +8,8 @@ Mounted as a FastAPI APIRouter and included in app.py with a single line:
 Zero modifications to existing app.py routes.
 """
 
-import io
 import time
-from typing import Optional
+from typing import Optional as _Optional, Optional
 
 import cv2
 import numpy as np
@@ -131,12 +130,6 @@ async def push_frame(
     if frame is None:
        raise HTTPException(400, "Could not decode image. Send a valid JPEG.")
 
-    # ✅ ADD THIS BLOCK
-    from app import camera_states, _get_or_init_state
-    state = _get_or_init_state(camera_id)
-    state["raw_frame"] = frame
-
-    push_client_frame(camera_id, frame)
     push_client_frame(camera_id, frame)
     return {"status": "ok", "camera_id": camera_id}
 
@@ -235,7 +228,7 @@ def list_all_v2():
 # ─────────────────────────────────────────────────────────────────
 
 from pydantic import BaseModel as _BaseModel
-from typing import List as _List
+from typing import Optional as _Optional, List as _List
 from roi_processor import (
     set_rois as _set_rois,
     get_rois as _get_rois,
@@ -252,8 +245,8 @@ class ROIDefinition(_BaseModel):
     y:         int
     w:         int
     h:         int
-    threshold: int   = None        # optional per-ROI threshold override
-    min_area:  int   = None        # optional per-ROI min contour area
+    threshold: _Optional[int] = None        # optional per-ROI threshold override
+    min_area:  _Optional[int] = None        # optional per-ROI min contour area
 
     class Config:
         json_schema_extra = {"example": {

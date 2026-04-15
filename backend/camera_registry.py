@@ -17,7 +17,6 @@ Structure of each registry entry:
         "fps"       : float,
         "last_frame": np.ndarray | None,
         "last_ts"   : str | None,
-        "detector"  : BaseDetector | None,
     }
 """
 
@@ -30,12 +29,7 @@ import cv2
 import numpy as np
 
 from config import settings
-from detection_methods.fd import FrameDifferencingDetector
-from detection_methods.mog2 import MOG2Detector
-from detection_methods.running_avg import RunningAverageDetector
-from detection_methods.custom import CustomDefectDetector
-from detection_methods.dl_model import DLModelDetector
-from roi_processor import process_frame as _roi_process_frame, get_rois, remove_camera_rois
+from roi_processor import process_frame as _roi_process_frame, remove_camera_rois
 
 # ─────────────────────────────────────────────────────────────────
 # Registry globals
@@ -52,13 +46,7 @@ _threads: Dict[str, threading.Thread] = {}
 
 _registry_lock = threading.Lock()
 
-METHOD_MAP = {
-    "fd":          FrameDifferencingDetector,
-    "mog2":        MOG2Detector,
-    "running_avg": RunningAverageDetector,
-    "custom":      CustomDefectDetector,
-    "dl":          DLModelDetector,
-}
+
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -81,16 +69,11 @@ def _make_state(
         "fps":        0.0,
         "last_frame": None,
         "last_ts":    None,
-        "detector":   None,
         "_fps_count": 0,
         "_fps_start": time.time(),
     }
 
 
-def _init_detector(state: dict) -> None:
-    """Instantiate detector for the camera and attach to state."""
-    DetCls = METHOD_MAP.get(state["method"], CustomDefectDetector)
-    state["detector"] = DetCls(camera_id=0)   # camera_id=0 placeholder for string ids
 
 
 def _run_detection(state: dict, frame: np.ndarray) -> np.ndarray:
@@ -145,16 +128,11 @@ def _rtsp_worker(camera_id: str) -> None:
 
         backoff = 1.0  # reset on successful connect
 
-        # Initialise detector with first frame
         ret, init_frame = cap.read()
         if not ret:
             cap.release()
             time.sleep(1.0)
             continue
-
-        if state["detector"] is None:
-            _init_detector(state)
-            state["detector"].initialize(init_frame)
 
         while state["active"]:
             ret, frame = cap.read()
@@ -196,10 +174,6 @@ def _client_detection_worker(camera_id: str) -> None:
         if frame_id == last_processed_id:
             time.sleep(0.01)
             continue
-
-        if state["detector"] is None:
-            _init_detector(state)
-            state["detector"].initialize(raw)
 
         processed = _run_detection(state, raw)
         state["last_frame"] = processed
@@ -325,4 +299,4 @@ def _offline_frame(camera_id: str, msg: str = "Offline") -> np.ndarray:
     frame = np.zeros((h, w, 3), dtype="uint8")
     cv2.putText(frame, f"[{camera_id}] {msg}", (20, h // 2),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (80, 80, 80), 2)
-    return frame
+    return frames

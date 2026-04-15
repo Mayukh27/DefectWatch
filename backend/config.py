@@ -6,6 +6,27 @@ Edit values here or set environment variables with the same name (uppercased).
 import os
 from dataclasses import dataclass, field
 
+try:
+    from dotenv import load_dotenv
+except Exception:
+    load_dotenv = None
+
+
+def _load_env_file() -> None:
+    """Load backend/.env when python-dotenv is available."""
+    if load_dotenv is None:
+        return
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    load_dotenv(env_path)
+
+
+def _parse_cors_origins(raw: str) -> list[str]:
+    vals = [v.strip() for v in raw.split(",") if v.strip()]
+    return vals or ["*"]
+
+
+_load_env_file()
+
 
 @dataclass
 class Settings:
@@ -59,6 +80,11 @@ class Settings:
     # ──────────────────────────────────────────
     YOLO_MODEL_PATH: str = os.getenv("YOLO_MODEL_PATH", "models/best.pt")
     YOLO_CONF_THRESHOLD: float = float(os.getenv("YOLO_CONF", "0.5"))
+
+    # Comma-separated list, e.g. "http://localhost:3000,http://127.0.0.1:3000"
+    CORS_ORIGINS: list[str] = field(
+        default_factory=lambda: _parse_cors_origins(os.getenv("CORS_ORIGINS", "*"))
+    )
 
     def __post_init__(self):
         os.makedirs(self.PREDICTIONS_DIR, exist_ok=True)

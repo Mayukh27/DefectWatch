@@ -15,7 +15,6 @@ New pipeline:
   6. Draw: red bounding rect + semi-transparent filled contour
 """
 from __future__ import annotations
-from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 import cv2
 import numpy as np
@@ -24,14 +23,6 @@ RED_BGR      = (0,   0,  220)
 RED_FILL_BGR = (30,  30, 200)
 ROI_BORDER   = (70, 100,  70)
 
-
-@dataclass
-class ROIDefectResult:
-    roi_id:   str
-    detected: bool
-    contours: list                 = field(default_factory=list, repr=False)
-    mask:     Optional[np.ndarray] = field(default=None,        repr=False)
-    x: int = 0; y: int = 0; w: int = 0; h: int = 0
 
 
 def compute_lab_defect(

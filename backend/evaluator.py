@@ -127,7 +127,12 @@ _PROJECT_DIR    = _BACKEND_DIR.parent
 PREDICTIONS_DIR = _BACKEND_DIR / "predictions"
 GRAPHS_DIR      = _BACKEND_DIR / "static" / "graphs"
 DATASET_DIR     = _PROJECT_DIR / "dataset"
-GT_CSV          = _PROJECT_DIR / "ground_truth.csv"
+# Use settings as single source of truth for ground truth path
+try:
+    from config import settings as _settings
+    GT_CSV = Path(_settings.GROUND_TRUTH_CSV)
+except Exception:
+    GT_CSV = _PROJECT_DIR / "ground_truth.csv"
 
 METHODS = ["fd", "mog2", "running_avg", "custom"]
 
@@ -247,7 +252,7 @@ def load_predictions(method: str) -> Optional[pd.DataFrame]:
     files = list(PREDICTIONS_DIR.glob(f"{method}_*.csv"))
 
     if not files:
-        path = PREDICTIONS_DIR / f"{method}_*.csv"
+        path = PREDICTIONS_DIR / f"{method}.csv"
         if not path.exists():
             return None
         files = [path]
@@ -255,22 +260,30 @@ def load_predictions(method: str) -> Optional[pd.DataFrame]:
     dfs = []
 
     for file in sorted(files):
-        df = pd.read_csv(file)
+        # Peek at first line to detect missing header before reading
+        raw_first = file.read_bytes().decode("utf-8", errors="replace").split("\n")[0].strip()
+        first_field = raw_first.split(",")[0].strip()
+        has_header = not first_field.lstrip("-").isdigit()
 
-        if "frame" not in df.columns:
-            df = pd.read_csv(file, header=None)
+        df = pd.read_csv(file, header=0 if has_header else None)
 
         # ✅ FIXED column mapping
-        if df.shape[1] == 5:
+        if df.shape[1] == 6:
+          df.columns = ["frame", "camera_id", "roi_id", "prediction", "score", "latency_ms"]
+
+        elif df.shape[1] == 5:
             df.columns = ["frame", "roi_id", "prediction", "score", "latency_ms"]
+            df["camera_id"] = "0"
 
         elif df.shape[1] == 4:
             df.columns = ["frame",  "prediction", "score", "latency_ms"]
             df["roi_id"] = "roi_0"
+            df["camera_id"] = "0"
 
         elif df.shape[1] == 2:
             df.columns = ["frame", "prediction"]
             df["roi_id"] = "roi_0"
+            df["camera_id"] = "0"
             df["score"] = df["prediction"]
             df["latency_ms"] = 0.0
 
@@ -686,12 +699,23 @@ def graph_latency_per_frame() -> str:
     plotted = False
 
     for method in METHODS:
-        path = PREDICTIONS_DIR / f"{method}_*.csv"
-        if not path.exists(): continue
-        df = pd.read_csv(path)
-        if "latency_ms" not in df.columns: continue
-        lat = df["latency_ms"].replace(0, np.nan).rolling(15, min_periods=1).mean()
-        ax.plot(df.index, lat, label=method.upper(),
+        # Collect both {method}.csv and {method}_*.csv (per-camera files)
+        candidates = [PREDICTIONS_DIR / f"{method}.csv"] +                      sorted(PREDICTIONS_DIR.glob(f"{method}_*.csv"))
+        frames_all = []
+        for path in candidates:
+            if not path.exists():
+                continue
+            try:
+                df_tmp = pd.read_csv(path)
+                if "latency_ms" in df_tmp.columns:
+                    frames_all.append(df_tmp["latency_ms"])
+            except Exception:
+                pass
+        if not frames_all:
+            continue
+        combined = pd.concat(frames_all, ignore_index=True)
+        lat = combined.replace(0, np.nan).rolling(15, min_periods=1).mean()
+        ax.plot(lat.index, lat, label=method.upper(),
                 color=COLOURS.get(method,"#888"), lw=1.6, alpha=0.88)
         plotted = True
 
@@ -863,7 +887,7 @@ def graph_roc_curve(gt_path: Optional[str] = None) -> str:
 
         merged = pd.merge(
             gt[["frame", "camera_id", "roi_id", "label"]],
-            preds[["frame", "camera_id", "roi_id", "prediction"]],
+            preds[["frame", "camera_id", "roi_id", "prediction","score"]],
             on=["frame", "camera_id", "roi_id"],
             how="inner",
         )

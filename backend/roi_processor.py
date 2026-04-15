@@ -137,8 +137,8 @@ def _log(
     with open(csv_path, "a", newline="") as f:
         w = csv.writer(f)
         if write_header:
-            w.writerow(["frame", "roi_id", "prediction", "score", "latency_ms"])
-        w.writerow([idx, roi_id, prediction, round(score, 5), round(latency_ms, 3)])
+            w.writerow(["frame", "camera_id", "roi_id", "prediction", "score", "latency_ms"])
+        w.writerow([idx, camera_id, roi_id, prediction, round(score, 5), round(latency_ms, 3)])
 
 
 # -- Public API ----------------------------------------------------
@@ -317,12 +317,36 @@ def process_frame(
             lat      = (time.perf_counter() - t0) * 1000
             det_flag = bool(result.prediction)
 
-            # Score = foreground area fraction (0.0-1.0), used for ROC curve
             if result.mask is not None:
-                score = float(np.sum(result.mask > 0)) / float(result.mask.size)
-            else:
-                score = float(det_flag)
 
+                roi_area = result.mask.size
+                changed_pixels = np.sum(result.mask > 0)
+
+                area_ratio = changed_pixels / float(roi_area)
+
+                contours, _ = cv2.findContours(result.mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+                max_contour_area = 0.0
+                if contours:
+                    max_contour_area = max(cv2.contourArea(c) for c in contours)
+
+                contour_ratio = max_contour_area / float(roi_area)
+
+                # 🔥 NEW: penalize noise
+                if area_ratio < 0.01:
+                    area_ratio *= 0.3
+
+                # 🔥 NEW: weighted nonlinear scoring
+                score = (0.6 * area_ratio + 0.4 * contour_ratio)
+
+                # 🔥 CRITICAL: expand distribution
+                score = score ** 1.5   # spreads values
+
+                score = max(0.0, min(1.0, score))
+
+            else:
+                score = 0.0
+            
             _log(eval_method, camera_id, roi_id, int(det_flag), score, lat)
 
             if eval_method == method:
