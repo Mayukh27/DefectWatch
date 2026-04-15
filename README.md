@@ -1,6 +1,6 @@
 # DefectWatch — Real-Time Multi-Camera Change Detection System
 
-> **RT-MCCDS v2.0.0** · FastAPI · React · OpenCV · Multi-ROI · Research Evaluation Pipeline
+> **RT-MCCDS** · FastAPI · React · OpenCV · Multi-ROI · Research Evaluation Pipeline
 
 DefectWatch is a real-time industrial defect and change detection platform designed for multi-camera deployment. It detects surface defects, object placement changes, cracks, and foreign material using classical computer vision methods, with a built-in research evaluation pipeline for method comparison and publication-ready output.
 
