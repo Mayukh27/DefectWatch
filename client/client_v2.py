@@ -24,14 +24,14 @@ import requests
 # ──────────────────────────────────────────────────────────────────
 # Args
 # ──────────────────────────────────────────────────────────────────
-parser = argparse.ArgumentParser(description="DefectWatch v2 — push client")
+parser = argparse.ArgumentParser(description="DefectWatch — push client")
 parser.add_argument("--server",  required=True,   help="Server base URL, e.g. http://192.168.1.10:8000")
 parser.add_argument("--id",      required=True,   help="Unique camera ID for this laptop")
 parser.add_argument("--cam",     type=int, default=0, help="Local webcam index (default: 0)")
 parser.add_argument("--method",  default="custom",
                     choices=["fd", "mog2", "running_avg", "custom", "dl"],
                     help="Detection method to request server-side (default: custom)")
-parser.add_argument("--fps",     type=float, default=15.0, help="Target push FPS (default: 15)")
+parser.add_argument("--fps",     type=float, default=60.0, help="Target push FPS (default: 60)")
 parser.add_argument("--quality", type=int,   default=70,   help="JPEG quality 1-100 (default: 70)")
 args = parser.parse_args()
 
