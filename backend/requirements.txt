@@ -1,0 +1,35 @@
+# ─────────────────────────────────────────────
+# Real-Time Defect & Change Detection System
+# Backend Dependencies — v2.0.0
+# ─────────────────────────────────────────────
+
+# Web Framework
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.9
+
+# Computer Vision
+opencv-python>=4.9.0
+numpy>=1.26.0
+imutils>=0.5.4
+
+# Evaluation & Metrics
+scikit-learn>=1.4.0
+pandas>=2.2.0
+matplotlib>=3.8.0
+
+# SSIM (optional — used by custom detector)
+scikit-image>=0.22.0
+
+# HTTP client (retained from original server.py for proxy routes)
+requests>=2.31.0
+
+# Database
+# (sqlite3 is part of Python stdlib — no extra install needed)
+
+# ─────────────────────────────────────────────
+# Deep Learning (INACTIVE — uncomment when dataset ready)
+# ─────────────────────────────────────────────
+# ultralytics>=8.1.0    # Uncomment when dataset is available
+# torch>=2.2.0          # Uncomment when dataset is available
+# torchvision>=0.17.0   # Uncomment when dataset is available

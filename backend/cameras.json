@@ -1,0 +1,26 @@
+[
+  {
+    "id": 0,
+    "label": "Camera 00",
+    "source": 0,
+    "note": "Webcam index 0 — change to a file path for demo (e.g. '/path/to/video.mp4')"
+  },
+  {
+    "id": 1,
+    "label": "Camera 01",
+    "source": 1,
+    "note": "Webcam index 1 or second USB cam"
+  },
+  {
+    "id": 2,
+    "label": "Camera 02",
+    "source": "http://192.168.0.105:5000/video",
+    "note": "Remote client stream (original project URL format)"
+  },
+  {
+    "id": 3,
+    "label": "Camera 03",
+    "source": "http://192.168.0.106:5000/video",
+    "note": "Remote client stream"
+  }
+]
