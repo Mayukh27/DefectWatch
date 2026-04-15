@@ -1,47 +1,57 @@
 // src/utils/api.js
-// Centralised API calls to FastAPI backend
+// Centralised API calls to FastAPI backend.
+// All calls go through apiFetch() which checks res.ok and throws
+// a proper Error on non-2xx responses with the detail from the body.
 
 const BASE = process.env.REACT_APP_API_URL || '';
+
+async function apiFetch(url, options = {}) {
+  const res = await fetch(`${BASE}${url}`, options);
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      detail = body?.detail || body?.message || JSON.stringify(body);
+    } catch (_) { /* body not JSON */ }
+    throw new Error(detail);
+  }
+  return res.json();
+}
 
 export const api = {
   // ── Detection control — legacy (int camera_id) ────────────────
   start: (cameraId, method) =>
-    fetch(`${BASE}/start?camera_id=${cameraId}&method=${method}`, { method: 'POST' })
-      .then(r => r.json()),
+    apiFetch(`/start?camera_id=${cameraId}&method=${method}`, { method: 'POST' }),
 
   stop: (cameraId) =>
-    fetch(`${BASE}/stop?camera_id=${cameraId}`, { method: 'POST' })
-      .then(r => r.json()),
+    apiFetch(`/stop?camera_id=${cameraId}`, { method: 'POST' }),
 
   // ── Detection control — v2 (string camera_id) ─────────────────
   addRtsp: (camera_id, rtsp_url, method) =>
-    fetch(`${BASE}/add_rtsp_camera`, {
+    apiFetch('/add_rtsp_camera', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ camera_id, rtsp_url, method }),
-    }).then(r => r.json()),
+    }),
 
   registerClient: (camera_id, method) =>
-    fetch(`${BASE}/register_client_camera`, {
+    apiFetch('/register_client_camera', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ camera_id, method }),
-    }).then(r => r.json()),
+    }),
 
   stopV2: (camera_id) =>
-    fetch(`${BASE}/stop_camera`, {
+    apiFetch('/stop_camera', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ camera_id }),
-    }).then(r => r.json()),
+    }),
 
   // ── Status ────────────────────────────────────────────────────
-  // /status now returns legacy + v2 cameras in one merged list
-  statusAll: () =>
-    fetch(`${BASE}/status`).then(r => r.json()),
+  statusAll: () => apiFetch('/status'),
 
-  statusOne: (cameraId) =>
-    fetch(`${BASE}/status/${cameraId}`).then(r => r.json()),
+  statusOne: (cameraId) => apiFetch(`/status/${cameraId}`),
 
   // ── Stream URL ─────────────────────────────────────────────────
   // Legacy int ids  → /stream/{id}
@@ -53,23 +63,35 @@ export const api = {
       : `${BASE}/v2/stream/${encodeURIComponent(id)}`;
   },
 
+  snapshotRawUrl: (cameraId) =>
+    `${BASE}/snapshot_raw/${encodeURIComponent(String(cameraId))}`,
+
+  // ── ROI management ────────────────────────────────────────────
+  setRois: (camera_id, rois) =>
+    apiFetch('/set_rois', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ camera_id: String(camera_id), rois }),
+    }),
+
+  getRois: (cameraId) => apiFetch(`/get_rois/${cameraId}`),
+
+  resetReference: (camera_id) =>
+    apiFetch('/reset_reference', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ camera_id: String(camera_id) }),
+    }),
+
+  // ── Snapshots ─────────────────────────────────────────────────
+  popupData: (cameraId) => apiFetch(`/popup_data/${cameraId}`),
+
   // ── Methods ───────────────────────────────────────────────────
-  methods: () =>
-    fetch(`${BASE}/methods`).then(r => r.json()),
+  methods: () => apiFetch('/methods'),
 
   // ── v2 camera list ────────────────────────────────────────────
-  camerasV2: () =>
-    fetch(`${BASE}/v2/cameras`).then(r => r.json()),
-
-  // ── Evaluation (backend computes + stores; UI just triggers) ──
-  // ⚠️  METRICS / GRAPHS — for future research use
-  // evaluate: () =>
-  //   fetch(`${BASE}/evaluate`).then(r => r.json()),
-  //
-  // compare: () =>
-  //   fetch(`${BASE}/compare`).then(r => r.json()),
+  camerasV2: () => apiFetch('/v2/cameras'),
 
   // ── Health ────────────────────────────────────────────────────
-  health: () =>
-    fetch(`${BASE}/health`).then(r => r.json()),
+  health: () => apiFetch('/health'),
 };

@@ -21,6 +21,12 @@ import ROISelectorModal from './ROISelectorModal';
 export default function CameraCard({ camera, onStart, onStop, availableMethods }) {
   const { id, active, defect, fps, method, timestamp, camType, roi_configured } = camera;
   const [selectedMethod, setSelectedMethod] = useState(method || 'custom');
+
+  // Sync selectedMethod when the camera's active method changes externally
+  // (e.g. after a stop/start cycle where backend reports a different method)
+  useEffect(() => {
+    setSelectedMethod(method || 'custom');
+  }, [method]);
   const imgRef   = useRef(null);
   const [imgErr, setImgErr] = useState(false);
   const [showROI, setShowROI] = useState(false);

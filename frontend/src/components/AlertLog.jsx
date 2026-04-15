@@ -1,6 +1,8 @@
 // src/components/AlertLog.jsx
 import { useState, useEffect, useRef } from 'react';
 
+let _eventCounter = 0;   // module-level: unique across all renders, no duplicate keys
+
 export default function AlertLog({ cameras }) {
   const [log, setLog] = useState([]);
   const prevDefects = useRef({});
@@ -10,7 +12,7 @@ export default function AlertLog({ cameras }) {
       const was = prevDefects.current[cam.id] ?? false;
       if (cam.defect && cam.active && !was) {
         setLog(prev => [{
-          key:      Date.now() + String(cam.id),
+          key:      `evt-${++_eventCounter}-${cam.id}`,
           cameraId: cam.id,
           method:   cam.method,
           time:     new Date().toLocaleTimeString('en-GB', { hour12: false }),

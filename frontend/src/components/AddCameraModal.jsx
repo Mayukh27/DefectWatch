@@ -1,29 +1,32 @@
 // src/components/AddCameraModal.jsx
 // Modal for adding RTSP or client-push cameras.
-// Appears as a floating panel; does NOT redesign the existing dashboard layout.
+// Uses inline styles throughout — tailwind.config.js only defines bg/text/ok/defect/warn/info/mask,
+// so surface-800, accent-cyan etc. are not available and produce invisible elements.
 
 import { useState } from 'react';
 import { api } from '../utils/api';
 
-const TYPE_LABELS = {
-  rtsp:   'RTSP / IP Camera',
-  client: 'Client Laptop (push)',
+const S = { fontFamily: 'IBM Plex Mono' };
+
+const INPUT = {
+  width: '100%', background: '#0d1117', border: '1px solid #21262d',
+  color: '#c9d1d9', fontFamily: 'IBM Plex Mono', fontSize: 11,
+  borderRadius: 5, padding: '7px 10px', outline: 'none', boxSizing: 'border-box',
 };
 
 export default function AddCameraModal({ onClose, availableMethods }) {
-  const [camType,   setCamType]   = useState('rtsp');
-  const [cameraId,  setCameraId]  = useState('');
-  const [rtspUrl,   setRtspUrl]   = useState('rtsp://');
-  const [method,    setMethod]    = useState('custom');
-  const [status,    setStatus]    = useState(null);   // null | 'loading' | 'ok' | 'error'
-  const [message,   setMessage]   = useState('');
+  const [camType,  setCamType]  = useState('rtsp');
+  const [cameraId, setCameraId] = useState('');
+  const [rtspUrl,  setRtspUrl]  = useState('rtsp://');
+  const [method,   setMethod]   = useState('custom');
+  const [status,   setStatus]   = useState(null);
+  const [message,  setMessage]  = useState('');
 
   const handleSubmit = async () => {
     if (!cameraId.trim()) { setMessage('Camera ID is required.'); setStatus('error'); return; }
     if (camType === 'rtsp' && !rtspUrl.startsWith('rtsp')) {
       setMessage('RTSP URL must start with rtsp://'); setStatus('error'); return;
     }
-
     setStatus('loading');
     try {
       const res = camType === 'rtsp'
@@ -44,138 +47,115 @@ export default function AddCameraModal({ onClose, availableMethods }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-surface-800 border border-surface-500 rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+    }}>
+      <div style={{
+        background: '#161b22', border: '1px solid #30363d', borderRadius: 10,
+        width: '100%', maxWidth: 460, margin: '0 16px', overflow: 'hidden',
+        boxShadow: '0 20px 48px rgba(0,0,0,0.6)',
+      }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-surface-600">
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', padding:'14px 18px', borderBottom:'1px solid #21262d', background:'#0d1117' }}>
           <div>
-            <p className="font-mono text-[10px] text-gray-500 uppercase tracking-widest">Add Camera</p>
-            <h2 className="font-display text-sm font-bold text-white mt-0.5">Register New Source</h2>
+            <p style={{ ...S, fontSize:9, color:'#484f58', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:3 }}>Add Camera</p>
+            <h2 style={{ ...S, fontSize:13, fontWeight:700, color:'#e6edf3' }}>Register New Source</h2>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 transition-colors text-lg leading-none">✕</button>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#484f58', fontSize:18, lineHeight:1, padding:'0 4px' }}>✕</button>
         </div>
 
         {/* Body */}
-        <div className="px-5 py-5 flex flex-col gap-4">
+        <div style={{ padding:'18px', display:'flex', flexDirection:'column', gap:14 }}>
 
           {/* Type toggle */}
           <div>
-            <label className="font-mono text-[10px] text-gray-500 uppercase tracking-wider block mb-1.5">Camera Type</label>
-            <div className="flex gap-2">
-              {Object.entries(TYPE_LABELS).map(([val, label]) => (
-                <button
-                  key={val}
-                  onClick={() => setCamType(val)}
-                  className={`
-                    flex-1 py-2 rounded-lg font-mono text-xs font-semibold tracking-wider border transition-all
-                    ${camType === val
-                      ? 'bg-accent-cyan/15 text-accent-cyan border-accent-cyan/40'
-                      : 'bg-surface-700 text-gray-500 border-surface-500 hover:border-gray-500'}
-                  `}
-                >
-                  {val === 'rtsp' ? '📡' : '💻'} {label}
-                </button>
+            <label style={{ ...S, fontSize:9, color:'#484f58', textTransform:'uppercase', letterSpacing:'0.08em', display:'block', marginBottom:6 }}>Camera Type</label>
+            <div style={{ display:'flex', gap:8 }}>
+              {[['rtsp','📡 RTSP / IP Camera'],['client','💻 Client Laptop (push)']].map(([val, label]) => (
+                <button key={val} onClick={() => setCamType(val)} style={{
+                  flex:1, padding:'7px 0', borderRadius:6, cursor:'pointer',
+                  ...S, fontSize:10, fontWeight:600,
+                  background: camType === val ? 'rgba(56,139,253,0.1)' : '#0d1117',
+                  color:      camType === val ? '#388bfd' : '#484f58',
+                  border:     `1px solid ${camType === val ? 'rgba(56,139,253,0.35)' : '#21262d'}`,
+                }}>{label}</button>
               ))}
             </div>
           </div>
 
           {/* Camera ID */}
           <div>
-            <label className="font-mono text-[10px] text-gray-500 uppercase tracking-wider block mb-1.5">
-              Camera ID <span className="text-gray-600">(unique string)</span>
+            <label style={{ ...S, fontSize:9, color:'#484f58', textTransform:'uppercase', letterSpacing:'0.08em', display:'block', marginBottom:6 }}>
+              Camera ID <span style={{ color:'#30363d' }}>(unique string)</span>
             </label>
-            <input
-              type="text"
-              value={cameraId}
-              onChange={e => setCameraId(e.target.value)}
+            <input type="text" value={cameraId} onChange={e => setCameraId(e.target.value)}
               placeholder="e.g. factory_floor_1 or laptop_mayukh"
-              className="
-                w-full bg-surface-700 border border-surface-500 text-gray-200
-                font-mono text-xs rounded-lg px-3 py-2 placeholder-gray-600
-                focus:outline-none focus:border-accent-cyan/50 transition-colors
-              "
+              style={{ ...INPUT }}
             />
           </div>
 
-          {/* RTSP URL (only for rtsp type) */}
+          {/* RTSP URL */}
           {camType === 'rtsp' && (
             <div>
-              <label className="font-mono text-[10px] text-gray-500 uppercase tracking-wider block mb-1.5">
-                RTSP URL
-              </label>
-              <input
-                type="text"
-                value={rtspUrl}
-                onChange={e => setRtspUrl(e.target.value)}
+              <label style={{ ...S, fontSize:9, color:'#484f58', textTransform:'uppercase', letterSpacing:'0.08em', display:'block', marginBottom:6 }}>RTSP URL</label>
+              <input type="text" value={rtspUrl} onChange={e => setRtspUrl(e.target.value)}
                 placeholder="rtsp://admin:pass@192.168.1.64:554/stream1"
-                className="
-                  w-full bg-surface-700 border border-surface-500 text-gray-200
-                  font-mono text-xs rounded-lg px-3 py-2 placeholder-gray-600
-                  focus:outline-none focus:border-accent-cyan/50 transition-colors
-                "
+                style={{ ...INPUT }}
               />
-              <p className="font-mono text-[9px] text-gray-600 mt-1">
-                Format: rtsp://[user:pass@]ip:port/path
-              </p>
+              <p style={{ ...S, fontSize:9, color:'#30363d', marginTop:4 }}>Format: rtsp://[user:pass@]ip:port/path</p>
             </div>
           )}
 
           {/* Client push instructions */}
           {camType === 'client' && (
-            <div className="bg-surface-700 border border-surface-500 rounded-lg px-3 py-3">
-              <p className="font-mono text-[10px] text-gray-500 uppercase tracking-wider mb-2">Client Setup</p>
-              <p className="font-mono text-[10px] text-gray-400 leading-relaxed">
+            <div style={{ background:'#0d1117', border:'1px solid #21262d', borderRadius:6, padding:'10px 12px' }}>
+              <p style={{ ...S, fontSize:9, color:'#484f58', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Client Setup</p>
+              <p style={{ ...S, fontSize:10, color:'#8b949e', lineHeight:1.7 }}>
                 After registering, run on the laptop:<br/>
-                <code className="text-accent-cyan">python client/client_v2.py --server http://SERVER:8000 --id {cameraId || 'YOUR_ID'}</code>
+                <code style={{ color:'#388bfd' }}>python client/client_v2.py --server http://SERVER:8000 --id {cameraId || 'YOUR_ID'}</code>
               </p>
             </div>
           )}
 
           {/* Method */}
           <div>
-            <label className="font-mono text-[10px] text-gray-500 uppercase tracking-wider block mb-1.5">Detection Method</label>
-            <select
-              value={method}
-              onChange={e => setMethod(e.target.value)}
-              className="w-full bg-surface-700 border border-surface-500 text-gray-300 font-mono text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-accent-cyan/50 transition-colors"
-            >
-              {(availableMethods.length ? availableMethods : ['fd','mog2','running_avg','custom','dl']).map(m => (
+            <label style={{ ...S, fontSize:9, color:'#484f58', textTransform:'uppercase', letterSpacing:'0.08em', display:'block', marginBottom:6 }}>Detection Method</label>
+            <select value={method} onChange={e => setMethod(e.target.value)} style={{ ...INPUT, cursor:'pointer' }}>
+              {(availableMethods?.length ? availableMethods : ['fd','mog2','running_avg','custom','dl']).map(m => (
                 <option key={m} value={m}>{m.toUpperCase()}</option>
               ))}
             </select>
           </div>
 
-          {/* Status message */}
+          {/* Status */}
           {message && (
-            <p className={`font-mono text-xs px-3 py-2 rounded-lg ${
-              status === 'ok'    ? 'bg-accent-green/10 text-accent-green border border-accent-green/20' :
-              status === 'error' ? 'bg-accent-red/10   text-accent-red   border border-accent-red/20'   :
-              'bg-surface-700 text-gray-400'
-            }`}>
-              {message}
-            </p>
+            <p style={{
+              ...S, fontSize:10, padding:'7px 10px', borderRadius:5,
+              background: status==='ok' ? 'rgba(35,134,54,0.1)' : status==='error' ? 'rgba(218,54,51,0.1)' : '#161b22',
+              color:      status==='ok' ? '#238636'              : status==='error' ? '#da3633'              : '#8b949e',
+              border:    `1px solid ${status==='ok' ? 'rgba(35,134,54,0.2)' : status==='error' ? 'rgba(218,54,51,0.2)' : '#21262d'}`,
+            }}>{message}</p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-surface-600 flex gap-3 justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg font-mono text-xs text-gray-500 hover:text-gray-300 border border-surface-500 hover:border-gray-500 transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={status === 'loading'}
-            className="
-              px-5 py-2 rounded-lg font-mono text-xs font-bold tracking-wider
-              bg-accent-cyan/15 text-accent-cyan border border-accent-cyan/30
-              hover:bg-accent-cyan/25 active:scale-95 transition-all
-              disabled:opacity-40 disabled:cursor-not-allowed
-            "
-          >
+        <div style={{ padding:'12px 18px', borderTop:'1px solid #21262d', display:'flex', gap:8, justifyContent:'flex-end' }}>
+          <button onClick={onClose} style={{
+            padding:'6px 14px', borderRadius:5, cursor:'pointer',
+            ...S, fontSize:10, color:'#484f58',
+            background:'transparent', border:'1px solid #21262d',
+          }}>Cancel</button>
+          <button onClick={handleSubmit} disabled={status==='loading'} style={{
+            padding:'6px 16px', borderRadius:5,
+            cursor: status==='loading' ? 'not-allowed' : 'pointer',
+            ...S, fontSize:10, fontWeight:700,
+            background:'rgba(56,139,253,0.1)', color:'#388bfd',
+            border:'1px solid rgba(56,139,253,0.3)',
+            opacity: status==='loading' ? 0.5 : 1,
+          }}>
             {status === 'loading' ? 'Registering…' : 'Register Camera'}
           </button>
         </div>
