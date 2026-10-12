@@ -1,0 +1,1 @@
+{"released": {"det_nom": 100.0, "det_str": 100.0, "fa_flick": 68.4, "fa_pers": 73.0}, "+illum-norm": {"det_nom": 100.0, "det_str": 100.0, "fa_flick": 0.0, "fa_pers": 0.0}, "+vote 3/5": {"det_nom": 100.0, "det_str": 100.0, "fa_flick": 82.0, "fa_pers": 72.0}, "+both": {"det_nom": 100.0, "det_str": 100.0, "fa_flick": 0.0, "fa_pers": 0.0}, "timing_ms": {"False": 52.14, "True": 55.7}}

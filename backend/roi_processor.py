@@ -58,6 +58,8 @@ from detection_methods.running_avg import RunningAverageDetector
 from detection_methods.dl_model    import DLModelDetector
 
 from defect_marker import overlay_defect_on_frame, draw_roi_border
+from temporal import TemporalVoter
+from run_meta import write_meta
 
 # -- ROI result dataclass ------------------------------------------
 @dataclass
@@ -99,6 +101,11 @@ _frame_counters: Dict[Tuple[str, str], int] = {}
 # Track which (method, camera_id) files have had their header written.
 _csv_headers_written: set = set()
 
+# Optional k-of-n temporal voting (settings.VOTE_N / VOTE_K; identity when N=1).
+_voter = TemporalVoter(settings.VOTE_N, settings.VOTE_K)
+
+_CSV_COLUMNS = ["frame", "camera_id", "roi_id", "prediction", "score", "latency_ms", "raw_score"]
+
 
 def _log(
     method:     str,
@@ -107,6 +114,8 @@ def _log(
     prediction: int,
     score:      float,
     latency_ms: float,
+    raw_score:  float = 0.0,
+    cfg:        Optional[dict] = None,
 ) -> None:
     """
     Append one prediction row to predictions/{method}_{camera_id}.csv.
@@ -131,14 +140,23 @@ def _log(
     _frame_counters[file_key] = _frame_counters.get(file_key, -1) + 1
     idx = _frame_counters[file_key]
 
+    # A pre-v2 CSV (no raw_score column) must not receive 7-column rows:
+    # rotate it aside once instead of silently corrupting it.
+    if file_key not in _csv_headers_written and csv_path.exists():
+        with open(csv_path, newline="") as fh:
+            first = fh.readline().strip().split(",")
+        if first != _CSV_COLUMNS:
+            csv_path.rename(csv_path.with_name(csv_path.stem + f"_legacy_{int(time.time())}.csv"))
     write_header = file_key not in _csv_headers_written and not csv_path.exists()
+    if file_key not in _csv_headers_written and cfg is not None:
+        write_meta(csv_path, method, cfg, settings)
     _csv_headers_written.add(file_key)
 
     with open(csv_path, "a", newline="") as f:
         w = csv.writer(f)
         if write_header:
-            w.writerow(["frame", "camera_id", "roi_id", "prediction", "score", "latency_ms"])
-        w.writerow([idx, camera_id, roi_id, prediction, round(score, 5), round(latency_ms, 3)])
+            w.writerow(_CSV_COLUMNS)
+        w.writerow([idx, camera_id, roi_id, prediction, round(score, 5), round(latency_ms, 3), round(raw_score, 5)])
 
 
 # -- Public API ----------------------------------------------------
@@ -304,7 +322,7 @@ def process_frame(
                 lat = (time.perf_counter() - t0) * 1000
 
                 # Log initialisation frame as clean (prediction=0, score=0)
-                _log(eval_method, camera_id, roi_id, 0, 0.0, lat)
+                _log(eval_method, camera_id, roi_id, 0, 0.0, lat, 0.0, det.config_dict())
 
                 if eval_method == method:
                     _snapshots.setdefault(camera_id, {})[roi_id + "_ref"] = crop.copy()
@@ -316,6 +334,8 @@ def process_frame(
             result   = det._detect(crop)
             lat      = (time.perf_counter() - t0) * 1000
             det_flag = bool(result.prediction)
+            if settings.VOTE_N > 1:   # optional k-of-n temporal voting
+                det_flag = _voter.update((camera_id, roi_id, eval_method), det_flag)
 
             if result.mask is not None:
 
@@ -347,7 +367,7 @@ def process_frame(
             else:
                 score = 0.0
             
-            _log(eval_method, camera_id, roi_id, int(det_flag), score, lat)
+            _log(eval_method, camera_id, roi_id, int(det_flag), score, lat, result.raw_score, det.config_dict())
 
             if eval_method == method:
                 display_detected = det_flag

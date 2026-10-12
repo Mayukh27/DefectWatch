@@ -37,13 +37,14 @@ class RunningAverageDetector(BaseDetector):
 
         diff = cv2.absdiff(self._bg_float.astype("uint8"), gray)
         _, thresh = cv2.threshold(
-            diff, settings.BINARY_THRESHOLD, 255, cv2.THRESH_BINARY
+            diff, self.op_threshold(), 255, cv2.THRESH_BINARY
         )
 
         morph = self.apply_morphology(thresh)
-        mask, detected = self.build_filled_mask(morph)
+        mask, detected = self.build_filled_mask(morph, self.op_min_area())
 
         # Update running average with current frame
         cv2.accumulateWeighted(gray_f, self._bg_float, self.alpha)
 
-        return DetectionResult(prediction=int(detected), latency_ms=0.0, mask=mask)
+        return DetectionResult(prediction=int(detected), latency_ms=0.0, mask=mask,
+                               raw_score=float(np.percentile(diff, 99)) / 255.0)

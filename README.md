@@ -147,7 +147,7 @@ Weighted exponential running average background model (`α = 0.05`). Slower adap
 ## Project Structure
 
 ```
-DefectWatch-V2/
+DefectWatch/
 ├── backend/
 │   ├── app.py                    # FastAPI app, camera workers, stream endpoints
 │   ├── camera_registry.py        # RTSP / client-push camera management
@@ -231,7 +231,7 @@ npm install
 
 ```bash
 cd backend
-python app.py
+python -m uvicorn app:app --host 0.0.0.0 --port 8000
 # Server starts at http://localhost:8000
 # API docs at http://localhost:8000/docs
 ```

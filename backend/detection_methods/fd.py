@@ -38,13 +38,14 @@ class FrameDifferencingDetector(BaseDetector):
 
         diff = cv2.absdiff(self._reference_gray, blurred)
         _, thresh = cv2.threshold(
-            diff, settings.BINARY_THRESHOLD, 255, cv2.THRESH_BINARY
+            diff, self.op_threshold(), 255, cv2.THRESH_BINARY
         )
         morph = self.apply_morphology(thresh)
-        mask, detected = self.build_filled_mask(morph)
+        mask, detected = self.build_filled_mask(morph, self.op_min_area())
 
         return DetectionResult(
             prediction=int(detected),
             latency_ms=0.0,  # measured externally in base.process()
             mask=mask,
+            raw_score=float(np.percentile(diff, 99)) / 255.0,
         )

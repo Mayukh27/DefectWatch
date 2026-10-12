@@ -22,6 +22,7 @@ class DetectionResult:
     prediction: int    # 0 = no defect, 1 = defect
     latency_ms: float  # inference time in milliseconds
     mask: np.ndarray = field(default=None, repr=False)
+    raw_score: float = 0.0   # continuous, threshold-free evidence in [0,1] (for ROC/PR)
 
 
 class BaseDetector(ABC):
@@ -60,6 +61,24 @@ class BaseDetector(ABC):
         Called directly by roi_processor — do NOT log to CSV here.
         """
         ...
+
+    # ── Operating point (supports threshold-matched comparison) ───────
+    def op_threshold(self) -> int:
+        """Binary threshold. Baselines use the global value unless
+        settings.MATCHED_THRESHOLDS is on, then they use the per-ROI slider."""
+        if settings.MATCHED_THRESHOLDS and hasattr(self, "_roi_threshold"):
+            return int(self._roi_threshold)
+        return int(settings.BINARY_THRESHOLD)
+
+    def op_min_area(self) -> int:
+        if settings.MATCHED_THRESHOLDS and hasattr(self, "_roi_min_area"):
+            return int(self._roi_min_area)
+        return int(settings.MIN_CONTOUR_AREA)
+
+    def config_dict(self) -> dict:
+        """Parameters that define this detector's operating point (logged)."""
+        return {"method": self.name, "threshold": self.op_threshold(),
+                "min_area": self.op_min_area()}
 
     # ── Shared CV utilities ────────────────────────────────────────
 

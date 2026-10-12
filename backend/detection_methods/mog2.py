@@ -46,5 +46,6 @@ class MOG2Detector(BaseDetector):
         if self._frame_count < self._warmup_frames:
             return DetectionResult(prediction=0, latency_ms=0.0, mask=None)
 
-        mask, detected = self.build_filled_mask(morph)
-        return DetectionResult(prediction=int(detected), latency_ms=0.0, mask=mask)
+        mask, detected = self.build_filled_mask(morph, self.op_min_area())
+        return DetectionResult(prediction=int(detected), latency_ms=0.0, mask=mask,
+                               raw_score=float(np.count_nonzero(fg_mask)) / fg_mask.size)

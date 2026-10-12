@@ -51,6 +51,19 @@ class Settings:
     # Raised from 25 → 35; Otsu adaptation in defect_marker adds further protection
     BINARY_THRESHOLD: int = int(os.getenv("BINARY_THRESHOLD", "25"))
 
+    # ── Evaluation-fairness and robustness switches (all default OFF so the
+    #    published behaviour is unchanged unless explicitly enabled) ──────────
+    # 1 = baselines (FD / MOG2 / RunAvg) use the SAME per-ROI threshold and
+    #     min-area as the Custom detector -> threshold-matched comparison.
+    MATCHED_THRESHOLDS: bool = os.getenv("MATCHED_THRESHOLDS", "0") == "1"
+    # 1 = Custom detector compensates multiplicative illumination change
+    #     (global gain + smooth shading) before the L-channel difference.
+    ILLUM_NORM: bool = os.getenv("ILLUM_NORM", "0") == "1"
+    # Temporal voting: report a defect only if >= VOTE_K of the last VOTE_N
+    # per-frame decisions are positive. VOTE_N=1 disables voting.
+    VOTE_N: int = int(os.getenv("VOTE_N", "1"))
+    VOTE_K: int = int(os.getenv("VOTE_K", "1"))
+
     # ──────────────────────────────────────────
     # Paths
     # ──────────────────────────────────────────
